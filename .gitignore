@@ -1,0 +1,4 @@
+*.drv
+result
+result-*
+.direnv/
