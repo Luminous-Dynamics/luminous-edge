@@ -118,7 +118,6 @@
       }
     },
     "sovereign-boot": {
-      "flake": false,
       "locked": {
         "lastModified": 1791208210,
         "narHash": "sha256-JEQwKcHRl3HcvjsK6OuXOp/qaKJ5v5a0dbsYA7XVjoE=",
