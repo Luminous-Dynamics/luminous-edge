@@ -1,0 +1,60 @@
+name: edge-qualification
+
+on:
+  push:
+    branches:
+      - main
+      - "hardening/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edge-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+
+      - name: Verify locked inputs
+        run: nix flake metadata --json > flake-metadata.json
+
+      - name: Evaluate exported modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix eval --raw .#nixosModules.sovereignBoot._module.args.lib.version >/dev/null
+          nix eval --raw .#nixosModules.nixward._module.args.lib.version >/dev/null
+
+      - name: Evaluate edge package graph
+        run: nix flake check --no-build
+
+      - name: Verify pinned component identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.locks.nodes.nixward.locked.rev | strings | test("^[0-9a-f]{40}$")' flake.lock
+          jq -e '.locks.nodes."sovereign-boot".locked.rev | strings | test("^[0-9a-f]{40}$")' flake.lock
+
+      - name: Upload composition evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: luminous-edge-qualification-${{ github.sha }}
+          path: |
+            flake.lock
+            flake-metadata.json
+          if-no-files-found: error
+          retention-days: 30
