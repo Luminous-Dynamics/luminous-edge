@@ -4,16 +4,16 @@ Meta-flake composing the [Luminous Platform](https://github.com/Luminous-Dynamic
 
 ## What it provides
 
-One flake input instead of three:
+One flake input instead of multiple platform component inputs:
 
 ```nix
 inputs.luminous-edge.url = "github:Luminous-Dynamics/luminous-edge";
 ```
 
 Gives you:
-- `nixosModules.sovereignBoot` — boot animation, fail-open state machine, Linux recovery
+- `nixosModules.sovereignBoot` — boot animation and the exported Sovereign Boot module; state/recovery enablement remains qualification-gated
 - `nixosModules.nixward` — conscious NixOS management + machine contracts
-- `packages.<system>.sporeBootTools` — pre-built boot binaries
+- `packages.<system>.sporeBootTools` — pre-built renderer package
 
 ## Components
 
@@ -43,9 +43,11 @@ inputs.luminous-edge.url = "github:Luminous-Dynamics/luminous-edge";
 ## Safety Contract
 
 > Platform components may observe host state; they must never be required for host boot.
+>
+> **Qualification rule:** the edge facade is not considered qualified unless every transitive component has an independently buildable, pinned, tested head.
 
 `sporeBoot.enable` is `false` by default. Do not enable it on a physical host until QEMU qualification gates pass.
 
 ## License
 
-AGPL-3.0-or-later.
+AGPL-3.0-or-later. See [LICENSE](LICENSE). Commercial licensing is described in [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
