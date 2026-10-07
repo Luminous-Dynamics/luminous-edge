@@ -21,7 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # main as of 2026-09-09
@@ -32,15 +34,19 @@ jobs:
       - name: Verify locked inputs
         run: nix flake metadata --json > flake-metadata.json
 
-      - name: Evaluate exported modules
+      - name: Evaluate exported module shapes
         shell: bash
         run: |
           set -euo pipefail
-          nix eval --raw .#nixosModules.sovereignBoot._module.args.lib.version >/dev/null
-          nix eval --raw .#nixosModules.nixward._module.args.lib.version >/dev/null
-
-      - name: Evaluate edge package graph
-        run: nix flake check --no-build
+          nix eval --raw --impure --expr '
+            let
+              flake = builtins.getFlake (toString ./.);
+            in
+              if builtins.isFunction flake.nixosModules.sovereignBoot
+                && builtins.isFunction flake.nixosModules.nixward
+              then "module-shapes-pass"
+              else throw "exported NixOS module is not a module function"
+          '
 
       - name: Verify pinned component identities
         shell: bash
@@ -48,6 +54,9 @@ jobs:
           set -euo pipefail
           jq -e '.locks.nodes.nixward.locked.rev | strings | test("^[0-9a-f]{40}$")' flake.lock
           jq -e '.locks.nodes."sovereign-boot".locked.rev | strings | test("^[0-9a-f]{40}$")' flake.lock
+
+      - name: Run full edge qualification
+        run: nix flake check
 
       - name: Upload composition evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
