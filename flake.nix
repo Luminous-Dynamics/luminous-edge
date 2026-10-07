@@ -1,16 +1,10 @@
 # Luminous Edge — meta-flake for the Luminous Platform Layer
 #
-# Composes sovereign-boot, nixward, and (optionally) sovereign-ops into a
-# single flake input for NixOS hosts. Hosts pin one URL instead of three.
+# Composes sovereign-boot and nixward into one host-facing input.
 #
-# Usage in /etc/nixos/flake.nix:
-#   inputs.luminous-edge.url = "github:Luminous-Dynamics/luminous-edge";
-#
-# Usage in NixOS modules:
-#   imports = [
-#     inputs.luminous-edge.nixosModules.sovereignBoot
-#     inputs.luminous-edge.nixosModules.nixward
-#   ];
+# Qualification is intentionally fail-closed: the renderer is available as a
+# useful component, but the edge facade is not considered fully qualified until
+# sovereign-boot exports both lifecycle executables required by its module.
 {
   description = "Luminous Edge — NixOS platform layer (sovereign-boot + nixward)";
 
@@ -20,7 +14,6 @@
 
     sovereign-boot = {
       url = "github:Luminous-Dynamics/sovereign-boot";
-      flake = false;
     };
 
     nixward = {
@@ -30,51 +23,69 @@
 
   outputs = { self, nixpkgs, flake-utils, sovereign-boot, nixward }:
     let
-      # Re-export the sovereign-boot NixOS module (from the source tree,
-      # same pattern as /etc/nixos currently uses).
-      sovereignBootModule = import (sovereign-boot.outPath + "/nix/modules/sovereign-boot.nix");
+      sovereignBootModule = sovereign-boot.nixosModules.sovereignBoot;
+      nixwardModule =
+        if builtins.hasAttr "default" nixward.nixosModules
+        then nixward.nixosModules.default
+        else nixward.nixosModules.nixward;
 
     in
     {
-      # Re-export all NixOS modules from constituent repos.
       nixosModules = {
-        # Sovereign Boot Ecology
         sovereignBoot = sovereignBootModule;
-        sporeBoot     = sovereignBootModule;  # legacy alias
-
-        # Nixward: conscious NixOS management
-        nixward       = nixward.nixosModules.default or nixward.nixosModules.nixward;
+        sporeBoot = sovereignBootModule;
+        nixward = nixwardModule;
       };
 
-      # Convenience: single module that imports both
       nixosModules.default = { ... }: {
         imports = [
           sovereignBootModule
-          (nixward.nixosModules.default or nixward.nixosModules.nixward)
+          nixwardModule
         ];
       };
-
-      # Pass through sovereign-boot source for spore-boot-tools derivation
-      inherit sovereign-boot;
 
     } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        sovereignBootPackages = sovereign-boot.packages.${system};
+        sporeBootRenderer = sovereignBootPackages.quicken-fb;
+        requiredLifecycleTools = [
+          "spore-boot-state"
+          "spore-recovery-linux"
+        ];
+        missingLifecycleTools =
+          builtins.filter
+            (name: !builtins.hasAttr name sovereignBootPackages)
+            requiredLifecycleTools;
 
-        # Build spore-boot-tools from sovereign-boot source
-        sporeBootTools = import (sovereign-boot.outPath + "/nix/packages/spore-boot-tools.nix") {
-          inherit pkgs;
-          src = sovereign-boot.outPath;
-        };
+        extractionCompletenessCheck =
+          pkgs.runCommand "luminous-edge-sovereign-boot-extraction-completeness" {} ''
+            echo "Required lifecycle tools: ${builtins.concatStringsSep ", " requiredLifecycleTools}"
+            echo "Missing lifecycle tools: ${builtins.concatStringsSep ", " missingLifecycleTools}"
+            if [ -n "${builtins.concatStringsSep " " missingLifecycleTools}" ]; then
+              echo "FAIL: sovereign-boot extraction is incomplete."
+              echo "The edge facade must not claim qualification without both lifecycle executables."
+              exit 1
+            fi
+            touch "$out"
+          '';
       in
       {
         packages = {
-          inherit sporeBootTools;
-          default = sporeBootTools;
+          # Honest compatibility name retained; this is the renderer package,
+          # not the lifecycle state/recovery toolset.
+          sporeBootTools = sporeBootRenderer;
+          default = sporeBootRenderer;
         };
 
-        # Integration check: build sovereign-boot tools + evaluate nixward module
-        checks.spore-boot-tools = sporeBootTools;
+        checks.sovereign-boot-extraction-completeness = extractionCompletenessCheck;
+        checks.spore-boot-renderer = sporeBootRenderer;
+
+        checks.module-export-shape = pkgs.runCommand "luminous-edge-module-export-shape" {} ''
+          test "${if builtins.isFunction sovereignBootModule then "yes" else "no"}" = yes
+          test "${if builtins.isFunction nixwardModule then "yes" else "no"}" = yes
+          touch "$out"
+        '';
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [ nil nixfmt-rfc-style nix-tree ];
