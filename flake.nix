@@ -66,22 +66,37 @@
           inherit pkgs;
           src = sovereign-boot.outPath;
         };
+
+        # Nix-managed REA launcher. REA's published artifact remains an npm
+        # package, fetched on first invocation into the user's XDG cache.
+        rea = import ./nix/packages/rea.nix {
+          inherit pkgs;
+        };
       in
       {
         packages = {
-          inherit sporeBootTools;
+          inherit sporeBootTools rea;
           default = sporeBootTools;
         };
 
-        # Integration check: build sovereign-boot tools + evaluate nixward module
-        checks.spore-boot-tools = sporeBootTools;
+        apps.rea = flake-utils.lib.mkApp {
+          drv = rea;
+        };
+
+        # Integration checks build both entrypoints; REA analysis itself is
+        # intentionally not run as part of a Nix build.
+        checks = {
+          spore-boot-tools = sporeBootTools;
+          rea-launcher = rea;
+        };
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [ nil nixfmt-rfc-style nix-tree ];
           shellHook = ''
             echo "Luminous Edge development shell"
-            echo "  sovereign-boot: ${sovereign-boot}"
-            echo "  nixward:        ${nixward}"
+            echo "  sovereign-boot: \${sovereign-boot}"
+            echo "  nixward:        \${nixward}"
+            echo "  REA launcher:   nix run .#rea -- doctor --json"
           '';
         };
       });
