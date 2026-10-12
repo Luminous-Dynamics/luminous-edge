@@ -11,7 +11,7 @@ nix run github:Luminous-Dynamics/luminous-edge#rea -- --version
 nix run github:Luminous-Dynamics/luminous-edge#rea -- doctor --json
 ```
 
-The flake currently pins the upstream npm package version to `rea-agents@6.4.0`. The Node.js 24 runtime comes from the locked `nixpkgs` input. The first invocation needs network access: the launcher runs the pinned npm package and caches it under `$XDG_CACHE_HOME/rea/npm` (or `~/.cache/rea/npm` when XDG_CACHE_HOME is unset).
+The flake currently pins the upstream npm package version to `rea-agents@6.4.0`. The locked nixpkgs input supplies Node.js 26.10.0, satisfying REA's documented Node.js 22.19+, 24.11+, or 26+ requirement. The first invocation needs network access: the launcher runs the pinned npm package and caches it under `$XDG_CACHE_HOME/rea/npm` (or `~/.cache/rea/npm` when XDG_CACHE_HOME is unset).
 
 **Scope of reproducibility:** the launcher and Node.js runtime are Nix-managed, and the application version is pinned. REA's npm package and JavaScript dependency closure are still fetched by npm at runtime; they are not built into the Nix store by this wrapper. This is not a fully offline or fully store-hermetic package.
 
