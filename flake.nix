@@ -94,8 +94,8 @@
           buildInputs = with pkgs; [ nil nixfmt-rfc-style nix-tree ];
           shellHook = ''
             echo "Luminous Edge development shell"
-            echo "  sovereign-boot: \${sovereign-boot}"
-            echo "  nixward:        \${nixward}"
+            echo "  sovereign-boot: ${sovereign-boot}"
+            echo "  nixward:        ${nixward}"
             echo "  REA launcher:   nix run .#rea -- doctor --json"
           '';
         };
