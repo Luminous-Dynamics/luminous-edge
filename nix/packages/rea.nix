@@ -6,11 +6,11 @@ pkgs.writeShellApplication {
   name = "rea";
 
   # REA currently ships through npm rather than as a native Nix package.
-  # Keep the runtime in the Nix closure and pin the published application
-  # version; npm verifies downloaded package integrity against registry metadata.
+  # Nixpkgs pinned by this flake provides Node.js 26.10.0, satisfying REA's
+  # current >=26 engine constraint without relying on a possibly older 24.x.
   # The npm package and its JS dependencies are fetched into the user's cache
   # on first invocation, not vendored into the Nix store.
-  runtimeInputs = [ pkgs.nodejs_24 ];
+  runtimeInputs = [ pkgs.nodejs_26 ];
 
   text = ''
     export npm_config_cache="''${XDG_CACHE_HOME:-$HOME/.cache}/rea/npm"
