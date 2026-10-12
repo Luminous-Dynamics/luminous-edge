@@ -51,7 +51,7 @@ nix run github:Luminous-Dynamics/luminous-edge#rea -- --version
 nix run github:Luminous-Dynamics/luminous-edge#rea -- doctor --json
 ```
 
-The launcher pins `rea-agents@6.4.0` and uses Node.js 24 from nixpkgs. The npm package is downloaded into the user's cache on first invocation; this is a Nix-managed launcher, not a fully offline/store-hermetic npm build. To make it available permanently, add `inputs.luminous-edge.packages.${pkgs.system}.rea` to `environment.systemPackages` or Home Manager's `home.packages`.
+The launcher pins `rea-agents@6.4.0` and uses Node.js 26.10.0 from the flake's locked nixpkgs. The npm package is downloaded into the user's cache on first invocation; this is a Nix-managed launcher, not a fully offline/store-hermetic npm build. To make it available permanently, add `inputs.luminous-edge.packages.${pkgs.system}.rea` to `environment.systemPackages` or Home Manager's `home.packages`.
 
 Review the install/setup behavior and current release limitations in [REA on Nix](docs/rea-with-nix.md). Installing the launcher does not run `rea setup`; setup can modify agent configuration, so run `rea setup --dry-run` before approving `rea setup`.
 
