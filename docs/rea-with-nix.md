@@ -72,3 +72,5 @@ When ready, run `rea setup` interactively, review the exact plan, and approve on
 The launcher is pinned to `rea-agents@6.4.0`, the latest published package verified during this change. Upstream `main` documents a WASM inspection command, but that command is not advertised by the 6.4.0 package checked for this integration. Do not assume `inspect-wasm-artifact` is available through this Nix launcher until a published REA release includes it or a separately pinned source build has been qualified.
 
 Deep native binary analysis still requires a supported provider such as Ghidra, Hopper, or IDA. The launcher does not install these automatically.
+
+REA's published host requirements currently list macOS, Ubuntu, Fedora, and Arch Linux, but do not explicitly list NixOS. The Nix launcher is an integration proposal, not proof that every REA provider is supported on NixOS. After installation, run `rea doctor --json` and qualify only the workflows your host and selected provider report as available.
