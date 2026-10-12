@@ -15,6 +15,18 @@ The flake currently pins the upstream npm package version to `rea-agents@6.4.0`.
 
 **Scope of reproducibility:** the launcher and Node.js runtime are Nix-managed, and the application version is pinned. REA's npm package and JavaScript dependency closure are still fetched by npm at runtime; they are not built into the Nix store by this wrapper. This is not a fully offline or fully store-hermetic package.
 
+## Install in a user Nix profile
+
+After this flake change is merged, install the launcher in the user's Nix profile:
+
+```sh
+nix profile install github:Luminous-Dynamics/luminous-edge#rea
+rea --version
+rea doctor --json
+```
+
+This installs the launcher and runtime into the Nix profile; it does not automatically configure any agent.
+
 ## Make the command available in NixOS
 
 With `inputs.luminous-edge.url = "github:Luminous-Dynamics/luminous-edge";` in your system flake, add the package to the relevant NixOS module:
