@@ -40,6 +40,10 @@ inputs.luminous-edge.url = "github:Luminous-Dynamics/luminous-edge";
 }
 ```
 
+## Research
+
+[REA-RS: a Rust-native successor to REA](docs/rea-rust-successor.md) documents the staged migration and the current read-only Rust artifact-inventory prototype under `rust/rea-rs`. The branch also contains a bounded harness to examine the exact published REA package, its CLI/MCP contract, and its self-analysis attempt. **Neither the Rust code nor self-analysis has passed CI yet**; the Nix-managed REA launcher remains separate in [PR #3](https://github.com/Luminous-Dynamics/luminous-edge/pull/3).
+
 ## Safety Contract
 
 > Platform components may observe host state; they must never be required for host boot.
